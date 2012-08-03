@@ -31,11 +31,12 @@
 # learning classes, see
 # http://juixe.com/techknow/index.php/2007/01/22/ruby-class-tutorial/
 class Entity
-    attr_accessor :description, :name
+    attr_accessor :description, :name, :container
 
     def initialize(name, description)
         @name = name
         @description = description
+        @container = nil
     end
 
     def to_s
@@ -43,34 +44,26 @@ class Entity
     end
 
     def action(verb)
-        if self.methods.index(verb) != nil
-            self.send(verb)
+        action = verb.downcase
+        if self.methods.index(action) != nil
+            self.send(action)
         else
             puts "I don't know how to #{verb} #{self}"
         end
     end
-    # TODO: represent container aspect, e.g. room has Items,
-    # Items contain other Items
+
+    def show_contents()
+        ObjectSpace.each_object(Entity) do |e|
+            puts e if e.container == self
+        end
+    end
 end
 
 class Item < Entity
-    attr_accessor :in_inventory
-
+    # TODO: Is there anything that distinguishes Items from 
+    # Entities?
     def initialize(name, description)
-        @name = name
-        @description = description
-        # TODO: consider using location and make inventory
-        # a special-case Entity/Item
-        @in_inventory = false # should we take as argument?
-    end
-
-    # return all items currently in inventory
-    def self.inventory()
-        items = []
-        ObjectSpace.each_object(Item) { |o|
-            items.push(o) if o.in_inventory
-        }
-        items
+        super
     end
 end
 
@@ -80,11 +73,30 @@ class Room < Entity
     # Room knows its exits refer to keys for other Rooms' values?
 end
 
+class DungeonMaster < Entity
+    # display current room description, a prompt character,
+    # and accept+process user input
+    # TODO: What's the right object class here?  Prompt? 
+    # Interface? Narrator? DungeonMaster?
+    # TODO: Do we loop infinitely in here, or in the main program?
+end
+
+class Player < Entity
+    # TODO: make fancy.
+end
+
 def test_entities
+    inventory = Entity.new("INVENTORY", "The things you are carrying")
     bag = Item.new("BAG", "This is your bag")
     torch = Item.new("TORCH", "It burns brightly with the flame of justice!")
-    torch.in_inventory = true
-    puts Item.inventory.inspect
+    torch.container = inventory
+    torch.action("LIGHT")
+    #puts Item.inventory.inspect
+    puts "Current inventory:"
+    inventory.show_contents
+    bag.container = inventory
+    puts "Current inventory with bag:"
+    inventory.show_contents
 end
 
 test_entities()
